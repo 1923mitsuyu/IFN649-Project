@@ -36,7 +36,7 @@ const TemperatureChart = () => {
 
   const checkWarning = (temp) => {
     if (temp > 30) {
-      setWarnings((prev) => [...prev, "水を飲もう"]);
+      setWarnings((prev) => [...prev, "Let's drink water!"]);
     }
   };
 
@@ -44,7 +44,7 @@ const TemperatureChart = () => {
     labels: temperatures.map((_, index) => index + 1),
     datasets: [
       {
-        label: '温度 (°C)',
+        label: 'Temperature (°C)',
         data: temperatures,
         borderColor: temperatures.map(temp => (temp >= 28 ? 'red' : 'blue')),
         backgroundColor: 'rgba(0, 0, 255, 0.1)',
@@ -54,15 +54,15 @@ const TemperatureChart = () => {
   };
 
   return (
-    <div style={{ width: '100%', maxWidth: '600px', margin: 'auto' }}>
-      <h2>温度グラフ</h2>
-      {warnings.length > 0 && (
-        <div style={{ color: 'red', fontWeight: 'bold' }}>
-          {warnings[warnings.length - 1]}
-        </div>
-      )}
-      <Line data={data} />
-    </div>
+    <div className="w-full max-w-md mx-auto">
+    <h2 className="text-xl font-semibold text-center mb-5">TemperatureChart</h2>
+    {warnings.length > 0 && (
+      <div className="text-red-600 font-bold">
+        {warnings[warnings.length - 1]}
+      </div>
+    )}
+    <Line data={data} />
+  </div>
   );
 };
 
