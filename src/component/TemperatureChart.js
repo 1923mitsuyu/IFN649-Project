@@ -1,7 +1,5 @@
-import React from 'react'
-import { useEffect, useState } from 'react'; // Import useState here
+import React, { useEffect, useState } from 'react';
 import { Line } from 'react-chartjs-2';
-import io from 'socket.io-client';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -15,33 +13,67 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Filler, Tooltip, Legend);
 
-const socket = io('http://your-backend-url'); 
-
 const TemperatureChart = () => {
-
-  const [temperatures, setTemperatures] = useState([25, 28, 32, 30, 29]);
-  const [warnings, setWarnings] = useState([]);
+  const [temperatures, setTemperatures] = useState([]);
+  const [timestamps, setTimestamps] = useState([]);
+  const [warning, setWarnings] = useState(false);
+  const MAX_SIZE = 10; 
+  const chart_name = "Temperature Chart";
+  const warning_message = "Please drink water"
 
   useEffect(() => {
-    socket.on('temperatureUpdate', (newTemperature) => {
-      // setTemperatures((prev) => [...prev, newTemperature]);
-      // checkWarning(newTemperature);
-  });
-  
-  checkWarning(temperatures);
-  return () => {
-    socket.off('temperatureUpdate');
-  };
-}, []);
+
+    // Declare a func to fetch temperature values with a validation
+    const fetchTemperature = async () => {
+      try {
+        const response = await fetch('http://your-backend-url/temperature'); // Adjust the URL
+        const data = await response.json();
+        if (data.temperature) {
+          const currentTime = new Date().toLocaleTimeString(); 
+          checkWarning(data.temperature);
+          setTemperatures((prev) => {
+            // Declare a list to add a new value to the list
+            const updatedTemperatures = [...prev, data.temperature];
+            // Check the length of the list 
+            return updatedTemperatures.length > MAX_SIZE 
+              // Chop off the excessive values from the list and return it
+              ? updatedTemperatures.slice(updatedTemperatures.length - MAX_SIZE) 
+              // Just return the list as it is
+              : updatedTemperatures;
+          });
+          setTimestamps((prev) => {
+            const updatedTimestamps = [...prev, currentTime];
+            return updatedTimestamps.length > MAX_SIZE 
+              ? updatedTimestamps.slice(updatedTimestamps.length - MAX_SIZE) 
+              : updatedTimestamps;
+          });
+
+        }
+      } catch (error) {
+        console.error('Error fetching temperature:', error);
+      }
+    };
+
+    // Initial fetch
+    fetchTemperature();
+
+    // Fetch temperature every 10 seconds
+    const interval = setInterval(fetchTemperature, 5000); // Set to 10000 ms (10 seconds)
+
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, []);
 
   const checkWarning = (temp) => {
     if (temp > 30) {
-      setWarnings((prev) => [...prev, "Let's drink water!"]);
+      setWarnings(true);
+    } else {
+      setWarnings(false); // 温度が30度以下の場合は警告を解除
     }
   };
 
   const data = {
-    labels: temperatures.map((_, index) => index + 1),
+    // labels: temperatures.map((_, index) => index + 1),
+    labels: timestamps, // 時刻をX軸のラベルに設定
     datasets: [
       {
         label: 'Temperature (°C)',
@@ -55,14 +87,12 @@ const TemperatureChart = () => {
 
   return (
     <div className="w-full max-w-md mx-auto">
-    <h2 className="text-xl font-semibold text-center mb-5">TemperatureChart</h2>
-    {warnings.length > 0 && (
-      <div className="text-red-600 font-bold">
-        {warnings[warnings.length - 1]}
-      </div>
-    )}
-    <Line data={data} />
-  </div>
+      <h2 className="text-xl font-semibold text-center mb-5">{chart_name}</h2>
+      { warning && (
+        <div className="text-red-600 font-bold">{warning_message}</div>
+      )}
+      <Line data={data} />
+    </div>
   );
 };
 
